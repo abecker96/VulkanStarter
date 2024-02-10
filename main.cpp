@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#include <map>
+#include <optional>
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -19,6 +21,14 @@ const bool enableValidationLayers = false;
 #else
 const bool enableValidationLayers = true;
 #endif
+
+struct QueueFamilyIndices {
+	std::optional<uint32_t> graphicsFamily;
+
+	bool isComplete() {
+		return graphicsFamily.has_value();
+	}
+};
 
 // Helper function
 // vkCreateDebugUtilsMessengerEXT function is necessary for debugging, but not
@@ -75,6 +85,7 @@ private:
 	GLFWwindow* window;
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
+	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
 	void initWindow() {
 		glfwInit();
@@ -138,6 +149,7 @@ private:
 	void initVulkan() {
 		createInstance();
 		setupDebugMessenger();
+		pickPhysicalDevice();
 	}
 
 	void mainLoop() {
@@ -263,6 +275,90 @@ private:
 			throw std::runtime_error("Failed to set up debug messenger");
 		}
 	}
+
+	void pickPhysicalDevice() {
+		uint32_t deviceCount = 0;
+
+		vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+		if (deviceCount == 0)
+		{
+			throw std::runtime_error("Failed to find a GPU with Vulkan support");
+		}
+
+		std::vector<VkPhysicalDevice> devices(deviceCount);
+		std::multimap<int, VkPhysicalDevice> candidates;
+		vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+		for (const auto& device : devices) {
+			int score = rateDeviceSuitability(device);
+			candidates.insert(std::make_pair(score, device));
+		}
+
+		if (candidates.rbegin()->first > 0)
+		{
+			physicalDevice = candidates.rbegin()->second;
+		}
+		else
+		{
+			throw std::runtime_error("Failed to find a suitable GPU");
+		}
+	}
+
+	int rateDeviceSuitability(VkPhysicalDevice device) {
+		VkPhysicalDeviceProperties deviceProperties;
+		VkPhysicalDeviceFeatures deviceFeatures;
+		vkGetPhysicalDeviceProperties(device, &deviceProperties);
+		vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+		int score = 0;
+
+		// Bare minimum requirement
+		if (!deviceFeatures.geometryShader)
+		{
+			return 0;
+		}
+
+		// Discrete GPU will probably be better than an integrated device
+		if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+		{
+			score += 1000;
+		}
+		// higher max texture resolution is better
+		score += deviceProperties.limits.maxImageDimension2D;
+
+		return score;
+	}
+
+	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+		QueueFamilyIndices indices;
+		uint32_t queueFamilyCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+		int i = 0;
+		for (const auto& queueFamily : queueFamilies) {
+			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+				indices.graphicsFamily = i;
+			}
+
+			if (indices.isComplete())
+			{
+				break;
+			}
+
+			i++;
+		}
+
+		return indices;
+	}
+
+	bool isDeviceSuitable(VkPhysicalDevice device) {
+		QueueFamilyIndices indices = findQueueFamilies(device);
+		return indices.isComplete();
+	}
+
 };
 
 int main() {
