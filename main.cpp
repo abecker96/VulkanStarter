@@ -13,6 +13,7 @@
 //#include <cstdint> // Theoretically for uint32_t... But it looks like we get that with Vulkan includes
 #include <limits> // std::numeric_limits
 #include <algorithm> // std::clamp
+#include <fstream>
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -88,6 +89,25 @@ void DestroyDebugUtilsMessengerEXT(
 	}
 }
 
+static std::vector<char> readFile(const std::string& filename) {
+	// std::ios::ate opens and immediately seeks to the end of the file
+	// That way we can easily tell from the cursor position how many bytes
+	// we should allocate in our output vector
+	std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+	if (!file.is_open()) {
+		throw std::runtime_error("Failed to open file");
+	}
+
+	size_t fileSize = (size_t)file.tellg();
+	std::vector<char> buffer(fileSize);
+	file.seekg(0);
+	file.read(buffer.data(), fileSize);
+	file.close();
+	
+	return buffer;
+}
+
 class HelloTriangleApplication {
 public:
 	void run() {
@@ -98,18 +118,18 @@ public:
 	}
 
 private:
-	GLFWwindow* window;
-	VkInstance instance;
-	VkDebugUtilsMessengerEXT debugMessenger;
+	GLFWwindow* window = nullptr;
+	VkInstance instance = nullptr;
+	VkDebugUtilsMessengerEXT debugMessenger = nullptr;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-	VkDevice device;	// Logical device, not physical
-	VkQueue graphicsQueue;
-	VkQueue presentQueue;
-	VkSurfaceKHR surface;
-	VkSwapchainKHR swapChain;
+	VkDevice device = nullptr;	// Logical device, not physical
+	VkQueue graphicsQueue = nullptr;
+	VkQueue presentQueue = nullptr;
+	VkSurfaceKHR surface = nullptr;
+	VkSwapchainKHR swapChain = nullptr;
 	std::vector<VkImage> swapChainImages;
-	VkFormat swapChainImageFormat;
-	VkExtent2D swapChainExtent;
+	VkFormat swapChainImageFormat = VK_FORMAT_UNDEFINED;
+	VkExtent2D swapChainExtent = {0, 0};
 	std::vector<VkImageView> swapChainImageViews;
 
 	void initWindow() {
@@ -129,6 +149,7 @@ private:
 		createLogicalDevice();
 		createSwapChain();
 		createImageViews();
+		createGraphicsPipeline();
 	}
 
 	void mainLoop() {
@@ -151,6 +172,7 @@ private:
 		vkDestroyDevice(device, nullptr);
 		vkDestroySurfaceKHR(instance, surface, nullptr);
 		vkDestroyInstance(instance, nullptr);
+		vkDestroyShaderModule(device, fragShaderModule, nullptr);
 
 		glfwDestroyWindow(window);
 		glfwTerminate();
@@ -622,6 +644,45 @@ private:
 		}
 	}
 
+	void createGraphicsPipeline() {
+		auto vertShaderCode = readFile("Shaders/vert.spv");
+		auto fragShaderCode = readFile("Shaders/frag.spv");
+
+		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
+		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+
+		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+		vertShaderStageInfo.module = vertShaderModule;
+		vertShaderStageInfo.pName = "main";
+
+		VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		vertShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		vertShaderStageInfo.module = fragShaderModule;
+		vertShaderStageInfo.pName = "main";
+
+		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+
+	}
+
+	VkShaderModule createShaderModule(const std::vector<char>& code) {
+		VkShaderModuleCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		createInfo.codeSize = code.size();
+		// I doubt endianness is even in question on any processor capable of supporting Vulkan
+		// But I still think this is a potentially unnecessary pain-point if this code
+		// ever needs to run on a big-endian processor
+		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+		VkShaderModule shaderModule;
+		if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create shader module");
+		}
+
+		return shaderModule;
+	}
 };
 
 int main() {
