@@ -118,29 +118,29 @@ public:
 	}
 
 private:
-	GLFWwindow* window = nullptr;
-	VkInstance instance = nullptr;
-	VkDebugUtilsMessengerEXT debugMessenger = nullptr;
+	GLFWwindow* window = VK_NULL_HANDLE;
+	VkInstance instance = VK_NULL_HANDLE;
+	VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-	VkDevice device = nullptr;	// Logical device, not physical
-	VkQueue graphicsQueue = nullptr;
-	VkQueue presentQueue = nullptr;
-	VkSurfaceKHR surface = nullptr;
-	VkSwapchainKHR swapChain = nullptr;
+	VkDevice device = VK_NULL_HANDLE;	// Logical device, not physical
+	VkQueue graphicsQueue = VK_NULL_HANDLE;
+	VkQueue presentQueue = VK_NULL_HANDLE;
+	VkSurfaceKHR surface = VK_NULL_HANDLE;
+	VkSwapchainKHR swapChain = VK_NULL_HANDLE;
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat = VK_FORMAT_UNDEFINED;
 	VkExtent2D swapChainExtent = {0, 0};
 	std::vector<VkImageView> swapChainImageViews;
-	VkShaderModule vertShaderModule = nullptr;
-	VkShaderModule fragShaderModule = nullptr;
-	VkRenderPass renderPass = nullptr;
-	VkPipelineLayout pipelineLayout = nullptr;
-	VkPipeline graphicsPipeline = nullptr;
+	VkShaderModule vertShaderModule = VK_NULL_HANDLE;
+	VkShaderModule fragShaderModule = VK_NULL_HANDLE;
+	VkRenderPass renderPass = VK_NULL_HANDLE;
+	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+	VkPipeline graphicsPipeline = VK_NULL_HANDLE;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
-	VkCommandPool commandPool = nullptr;
-	VkCommandBuffer commandBuffer = nullptr;
-	VkSemaphore imageAvailableSemaphore;
-	VkSemaphore renderFinishedSemaphore;
+	VkCommandPool commandPool = VK_NULL_HANDLE;
+	VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+	VkSemaphore imageAvailableSemaphore = VK_NULL_HANDLE;
+	VkSemaphore renderFinishedSemaphore = VK_NULL_HANDLE;
 	VkFence inFlightFence;
 
 	void initWindow() {
