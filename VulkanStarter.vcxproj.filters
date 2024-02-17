@@ -16,9 +16,6 @@
     <Filter Include="Source Files\Shaders">
       <UniqueIdentifier>{3812168e-67bc-45eb-b69e-e8f4795abc53}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files\Textures">
-      <UniqueIdentifier>{905a4145-f76c-42bc-9e88-546b334dd18c}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -35,10 +32,5 @@
     <None Include="Shaders\compile_shaders.bat">
       <Filter>Source Files\Shaders</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="Textures\Doggo.jpg">
-      <Filter>Resource Files\Textures</Filter>
-    </Image>
   </ItemGroup>
 </Project>
